@@ -26,6 +26,9 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    environment:
+      FLYWAY_PLACEHOLDERS_REST_PASSWORD: ${REST_PASSWORD}
+      FLYWAY_PLACEHOLDERS_DB_USER_PASSWORD: ${DB_USER_PASSWORD}
     command: >
       -url=jdbc:postgresql://postgres:5432/${DB_NAME}
       -user=${DB_USER}
@@ -35,19 +38,20 @@ services:
     volumes:
       - ./migrations:/flyway/sql
 
-  # postgrest:
-  #   image: postgrest/postgrest
-  #   container_name: postgrest
-  #   depends_on:
-  #     - postgres
+  postgrest:
+    image: postgrest/postgrest
+    container_name: postgrest
+    depends_on:
+      postgres:
+        condition: service_healthy
 
-  #   ports:
-  #     - "38081:3000"
+    ports:
+      - "38081:3000"
 
-  #   environment:
-  #     PGRST_DB_URI: postgres://authenticator:mysecretpassword@postgres:5432/${DB_NAME}
-  #     PGRST_DB_SCHEMA: web
-  #     PGRST_DB_ANON_ROLE: web_anon
+    environment:
+      PGRST_DB_URI: postgres://authenticator:${REST_PASSWORD}@postgres:5432/${DB_NAME}
+      PGRST_DB_SCHEMA: public
+      PGRST_DB_ANON_ROLE: webuser
 
   # pgadmin:
   #   image: dpage/pgadmin4
