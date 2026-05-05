@@ -1,0 +1,72 @@
+
+services:
+  postgres:
+    image: postgres:18
+    container_name: postgres18
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  migrate:
+    image: flyway/flyway
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: >
+      -url=jdbc:postgresql://postgres:5432/${DB_NAME}
+      -user=${DB_USER}
+      -password=${DB_PASSWORD}
+      -locations=filesystem:/flyway/sql
+      migrate
+    volumes:
+      - ./migrations:/flyway/sql
+
+  # postgrest:
+  #   image: postgrest/postgrest
+  #   container_name: postgrest
+  #   depends_on:
+  #     - postgres
+
+  #   ports:
+  #     - "38081:3000"
+
+  #   environment:
+  #     PGRST_DB_URI: postgres://authenticator:mysecretpassword@postgres:5432/${DB_NAME}
+  #     PGRST_DB_SCHEMA: web
+  #     PGRST_DB_ANON_ROLE: web_anon
+
+  # pgadmin:
+  #   image: dpage/pgadmin4
+  #   container_name: pgadmin
+  #   restart: unless-stopped
+
+  #   environment:
+  #     PGADMIN_DEFAULT_EMAIL: web@example.com
+  #     PGADMIN_DEFAULT_PASSWORD: password 
+
+  #   ports:
+  #     - "38080:80"
+
+  #   volumes:
+  #     - pgadmin_data:/var/lib/pgadmin
+  #     - ./servers.json:/pgadmin4/servers.json
+
+  #   depends_on:
+  #     - postgres
+volumes:
+  postgres_data:
+  pgadmin_data:
